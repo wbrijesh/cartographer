@@ -1,6 +1,5 @@
 import { useCallback } from 'react';
 import ReactFlow, {
-  MiniMap,
   Controls,
   Background,
   useNodesState,
@@ -45,10 +44,6 @@ export default function GraphVisualization({ nodes: initialNodes, edges: initial
         className="bg-gray-50"
       >
         <Controls />
-        <MiniMap 
-          nodeColor="#374151"
-          className="bg-white border border-gray-300"
-        />
         <Background variant="dots" gap={12} size={1} />
       </ReactFlow>
     </div>

@@ -54,12 +54,13 @@ const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
 export function parseDOT(dotContent: string): GraphData {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
+  const processedNodes = new Set<string>();
   
   // Extract node definitions with tooltips
-  const nodeRegex = /"([^"]+)"\s*(?:\[tooltip="([^"]*)"\])?;/g;
+  const nodeWithTooltipRegex = /"([^"]+)"\s*\[tooltip="([^"]*)"\];/g;
   let nodeMatch;
   
-  while ((nodeMatch = nodeRegex.exec(dotContent)) !== null) {
+  while ((nodeMatch = nodeWithTooltipRegex.exec(dotContent)) !== null) {
     const [, id, tooltip] = nodeMatch;
     nodes.push({
       id,
@@ -67,9 +68,30 @@ export function parseDOT(dotContent: string): GraphData {
         label: id,
         tooltip: tooltip || ''
       },
-      position: { x: 0, y: 0 }, // Will be overridden by layout
+      position: { x: 0, y: 0 },
       type: 'custom'
     });
+    processedNodes.add(id);
+  }
+  
+  // Extract node definitions without tooltips
+  const nodeWithoutTooltipRegex = /"([^"]+)";/g;
+  let simpleNodeMatch;
+  
+  while ((simpleNodeMatch = nodeWithoutTooltipRegex.exec(dotContent)) !== null) {
+    const [, id] = simpleNodeMatch;
+    if (!processedNodes.has(id)) {
+      nodes.push({
+        id,
+        data: { 
+          label: id,
+          tooltip: ''
+        },
+        position: { x: 0, y: 0 },
+        type: 'custom'
+      });
+      processedNodes.add(id);
+    }
   }
   
   // Extract edge definitions

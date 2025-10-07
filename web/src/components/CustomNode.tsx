@@ -1,5 +1,5 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Info, X } from 'lucide-react';
 
 interface CustomNodeData {
@@ -13,11 +13,18 @@ interface CustomNodeData {
 }
 
 export default function CustomNode({ data, id }: NodeProps<CustomNodeData>) {
+  const filenameRef = useRef<HTMLDivElement>(null);
   const hasExplanation = data.tooltip && data.tooltip.trim().length > 0;
   const isDark = data.isDark || false;
   const isHighlighted = data.isHighlighted || false;
   const highlightType = data.highlightType;
   const showTooltip = data.openTooltipId === id;
+
+  useEffect(() => {
+    if (showTooltip && filenameRef.current) {
+      filenameRef.current.click();
+    }
+  }, [showTooltip]);
 
   const toggleTooltip = (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,7 +105,7 @@ export default function CustomNode({ data, id }: NodeProps<CustomNodeData>) {
             return (
               <>
                 <div className="flex items-center justify-between p-2 border-b border-gray-600">
-                  <div className="text-xs font-mono text-gray-300">
+                  <div ref={filenameRef} className="text-xs font-mono text-gray-300">
                     {fileName}:{lineNumber}
                   </div>
                   <button

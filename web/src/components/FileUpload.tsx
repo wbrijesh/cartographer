@@ -1,10 +1,15 @@
 import { useState, ChangeEvent, DragEvent } from 'react';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Label } from '@/components/ui/label';
 
 interface FileUploadProps {
   onFileContent: (content: string) => void;
+  isDark: boolean;
 }
 
-export default function FileUpload({ onFileContent }: FileUploadProps) {
+export default function FileUpload({ onFileContent, isDark }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [textInput, setTextInput] = useState('');
 
@@ -56,57 +61,64 @@ export default function FileUpload({ onFileContent }: FileUploadProps) {
   return (
     <div className="space-y-6">
       {/* File Upload */}
-      <div
-        className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
-          dragActive 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400'
-        }`}
-        onDragEnter={handleDrag}
-        onDragLeave={handleDrag}
-        onDragOver={handleDrag}
-        onDrop={handleDrop}
-      >
-        <div className="space-y-4">
-          <div className="text-gray-600">
-            <p className="text-lg font-medium">Upload DOT File</p>
-            <p className="text-sm">Drag and drop your .dot file here, or click to browse</p>
-          </div>
-          <input
-            type="file"
-            accept=".dot"
-            onChange={handleFileInput}
-            className="hidden"
-            id="file-upload"
-          />
-          <label
-            htmlFor="file-upload"
-            className="inline-block px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 cursor-pointer transition-colors"
+      <Card>
+        <CardContent className="p-8">
+          <div
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+              dragActive 
+                ? 'border-primary bg-primary/5' 
+                : 'border-muted-foreground/25 hover:border-muted-foreground/50'
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
           >
-            Choose File
-          </label>
-        </div>
-      </div>
+            <div className="space-y-4">
+              <div className="text-muted-foreground">
+                <p className="text-lg font-medium">Upload DOT File</p>
+                <p className="text-sm">Drag and drop your .dot file here, or click to browse</p>
+              </div>
+              <input
+                type="file"
+                accept=".dot"
+                onChange={handleFileInput}
+                className="hidden"
+                id="file-upload"
+              />
+              <Button asChild>
+                <label htmlFor="file-upload" className="cursor-pointer">
+                  Choose File
+                </label>
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Text Input */}
-      <div className="space-y-4">
-        <label className="block text-lg font-medium text-gray-700">
-          Or Paste DOT Content
-        </label>
-        <textarea
-          value={textInput}
-          onChange={(e) => setTextInput(e.target.value)}
-          placeholder="Paste your DOT file content here..."
-          className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
-        <button
-          onClick={handleTextSubmit}
-          disabled={!textInput.trim()}
-          className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-        >
-          Load Graph
-        </button>
-      </div>
+      <Card>
+        <CardContent className="p-6 space-y-4">
+          <Label htmlFor="dot-content" className="text-lg font-medium">
+            Or Paste DOT Content
+          </Label>
+          <Textarea
+            id="dot-content"
+            value={textInput}
+            onChange={(e) => setTextInput(e.target.value)}
+            placeholder="Paste your DOT file content here..."
+            className="min-h-32"
+          />
+          <Button 
+            onClick={handleTextSubmit}
+            disabled={!textInput.trim()}
+            className="w-full"
+            variant="secondary"
+          >
+            Load Graph
+          </Button>
+        </CardContent>
+      </Card>
     </div>
   );
 }

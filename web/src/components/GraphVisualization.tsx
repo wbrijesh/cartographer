@@ -1,16 +1,18 @@
 import { useCallback } from 'react';
-import ReactFlow, {
+import {
+  ReactFlow,
   Controls,
   Background,
   useNodesState,
   useEdgesState,
   addEdge,
-  Node,
-  Edge,
-  Connection,
-  NodeTypes,
-} from 'reactflow';
-import 'reactflow/dist/style.css';
+  type Node,
+  type Edge,
+  type Connection,
+  type NodeTypes,
+  type ColorMode,
+} from '@xyflow/react';
+import '@xyflow/react/dist/style.css';
 import CustomNode from './CustomNode';
 
 const nodeTypes: NodeTypes = {
@@ -20,9 +22,10 @@ const nodeTypes: NodeTypes = {
 interface GraphVisualizationProps {
   nodes: Node[];
   edges: Edge[];
+  isDark: boolean;
 }
 
-export default function GraphVisualization({ nodes: initialNodes, edges: initialEdges }: GraphVisualizationProps) {
+export default function GraphVisualization({ nodes: initialNodes, edges: initialEdges, isDark }: GraphVisualizationProps) {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
@@ -30,6 +33,8 @@ export default function GraphVisualization({ nodes: initialNodes, edges: initial
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
     [setEdges]
   );
+
+  const colorMode: ColorMode = isDark ? 'dark' : 'light';
 
   return (
     <div className="w-full h-full">
@@ -40,8 +45,8 @@ export default function GraphVisualization({ nodes: initialNodes, edges: initial
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         nodeTypes={nodeTypes}
+        colorMode={colorMode}
         fitView
-        className="bg-gray-50"
       >
         <Controls />
         <Background variant="dots" gap={12} size={1} />

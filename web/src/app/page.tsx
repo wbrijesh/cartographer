@@ -1,10 +1,14 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { Sun, Moon } from 'lucide-react';
 import GraphVisualization from '@/components/GraphVisualization';
 import FileUpload from '@/components/FileUpload';
 import { parseDOT } from '@/lib/dotParser';
-import { Node, Edge } from 'reactflow';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import type { Node, Edge } from '@xyflow/react';
 
 interface GraphData {
   nodes: Node[];
@@ -15,6 +19,25 @@ export default function Home() {
   const [graphData, setGraphData] = useState<GraphData | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isDark, setIsDark] = useState(false);
+
+  // Load dark mode preference from localStorage
+  useEffect(() => {
+    const saved = localStorage.getItem('darkMode');
+    if (saved) {
+      setIsDark(JSON.parse(saved));
+    }
+  }, []);
+
+  // Update localStorage and document class when dark mode changes
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDark));
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDark]);
 
   const handleFileContent = async (content: string) => {
     setLoading(true);
@@ -22,7 +45,12 @@ export default function Home() {
     
     try {
       const { nodes, edges } = parseDOT(content);
-      setGraphData({ nodes, edges });
+      // Add dark mode info to node data
+      const nodesWithDarkMode = nodes.map(node => ({
+        ...node,
+        data: { ...node.data, isDark }
+      }));
+      setGraphData({ nodes: nodesWithDarkMode, edges });
     } catch (err) {
       setError('Failed to parse DOT file. Please check the format.');
       console.error('Parse error:', err);
@@ -36,68 +64,83 @@ export default function Home() {
     setError(null);
   };
 
+  const toggleDarkMode = () => {
+    setIsDark(!isDark);
+  };
+
   return (
-    <div className="h-screen flex flex-col bg-gray-100">
-      <header className="bg-white shadow-sm border-b flex-shrink-0">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center gap-8">
-              <h1 className="text-2xl font-bold text-gray-900">Cartographer</h1>
+    <div className="h-screen flex flex-col bg-background">
+      <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 flex-shrink-0">
+        <div className="lg:px-4">
+          <div className="flex items-center py-3">
+            <div className="flex-1 flex items-center">
+              <h1 className="text-md font-medium text-foreground">
+                Cartographer
+              </h1>
+            </div>
+            <div className="flex-1 text-center text-sm text-muted-foreground">
+              {graphData && `${graphData.nodes.length} functions, ${graphData.edges.length} connections`}
+            </div>
+            <div className="flex-1 flex items-center justify-end gap-4">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={toggleDarkMode}
+                className="h-9 w-9"
+              >
+                {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </Button>
               {graphData && (
-                <div className="text-sm text-gray-600">
-                  {graphData.nodes.length} functions, {graphData.edges.length} connections
-                </div>
+                <Button onClick={resetGraph} variant="outline">
+                  Load New Graph
+                </Button>
               )}
             </div>
-            {graphData && (
-              <button
-                onClick={resetGraph}
-                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-              >
-                Load New Graph
-              </button>
-            )}
           </div>
         </div>
       </header>
 
       <main className="flex-1 overflow-hidden">
         {!graphData ? (
-          <div className="h-full flex items-center justify-center">
-            <div className="max-w-2xl mx-auto p-8">
-              <div className="bg-white rounded-lg shadow-sm p-8">
-                <div className="text-center mb-8">
-                  <h2 className="text-xl font-semibold text-gray-900 mb-2">
+          <div className="h-full flex items-center justify-center p-8">
+            <div className="max-w-2xl mx-auto w-full">
+              <Card>
+                <CardHeader className="text-center">
+                  <CardTitle className="text-2xl">
                     Visualize Your Go Code Dependencies
-                  </h2>
-                  <p className="text-gray-600">
+                  </CardTitle>
+                  <CardDescription>
                     Upload a DOT file generated by the Cartographer CLI tool to see an interactive graph
                     with AI-powered explanations.
-                  </p>
-                </div>
-                
-                {error && (
-                  <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
-                    <p className="text-red-800">{error}</p>
-                  </div>
-                )}
-                
-                {loading ? (
-                  <div className="text-center py-8">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                    <p className="mt-2 text-gray-600">Processing graph...</p>
-                  </div>
-                ) : (
-                  <FileUpload onFileContent={handleFileContent} />
-                )}
-              </div>
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {error && (
+                    <Alert variant="destructive" className="mb-6">
+                      <AlertDescription>{error}</AlertDescription>
+                    </Alert>
+                  )}
+                  
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <p className="mt-2 text-muted-foreground">
+                        Processing graph...
+                      </p>
+                    </div>
+                  ) : (
+                    <FileUpload onFileContent={handleFileContent} isDark={isDark} />
+                  )}
+                </CardContent>
+              </Card>
             </div>
           </div>
         ) : (
           <div className="h-full">
             <GraphVisualization 
               nodes={graphData.nodes} 
-              edges={graphData.edges} 
+              edges={graphData.edges}
+              isDark={isDark}
             />
           </div>
         )}

@@ -1,0 +1,37 @@
+digraph G {
+  rankdir=LR;
+  node [shape=box];
+  "main.main" [tooltip="The function initializes a CallGraph data structure to analyze a directory specified by the user, which defaults to the current directory if not provided as a command-line flag '-dir'. It then initializes and caches information from the directory, performs analysis on the directory to populate the CallGraph, generates explanations based on the graph and cached information, and outputs the CallGraph in DOT format."];
+  "main.initCache" [tooltip="This function initializes a cache database by opening a SQLite database connection at the specified directory, creating a table to store explanations, and returning a Cache struct instance tied to this database connection upon successful setup."];
+  "main.analyzeDirectory" [tooltip="The function analyzes a directory, traversing its contents recursively using filepath.Walk, and ignores files with suffix .go, _test.go, or those within the vendor/ directory, while calling the analyzeFile function on eligible Go source files to update the CallGraph."];
+  "astVisitor.extractSourceCode" [tooltip="This function extracts source code for a given function declaration as a string, returning the original source code if available, or formatted source code if not, using the go/format library as a fallback."];
+  "Cache.Get" [tooltip="This function retrieves an explanation associated with a given hash from a database, returning the explanation as a string and a boolean indicating whether the retrieval was successful."];
+  "Cache.Set" [tooltip="This function sets a key-value pair in a database, specifically inserting or replacing an entry in the 'explanations' table with a hash and corresponding explanation string."];
+  "Cache.Close" [tooltip="This function is a method on a Cache struct that closes the connection to the database, delegating the actual closing operation to the c.db.Close() method and returning any resulting error."];
+  "main.hashSourceCode" [tooltip="This function generates a SHA-256 hash of the input code string, converting the result into a hexadecimal string representation for storage or comparison purposes."];
+  "main.analyzeFile" [tooltip="This function analyzes the source code of a file specified by filename and populates a CallGraph structure with information about the code. It uses the Go parser to parse the file, creates an astVisitor instance to walk the Abstract Syntax Tree and extract relevant data, and finally reads the source file to provide raw code to the visitor."];
+  "astVisitor.getReceiver" [tooltip="This function returns the receiver name of an AST-generated function declaration, or an empty string if no receiver is declared, by inspecting the first field in the receiver struct and determining its type and name."];
+  "astVisitor.getCallTarget" [tooltip="This function determines the target of a call expression in an abstract syntax tree, and returns it as a string. It supports calls to named fields, methods, and identifiers, prioritizing the current type when applicable and inferring types from variable names for complex expressions. The result is constructed by prefixing the name of the target field or method with the namespace formed by the package name and the current or inferred type."];
+  "main.generateExplanations" [tooltip="This function generates explanations for functions in a call graph by querying an LLM API, caching results to prevent redundant requests, and limiting concurrent requests to 5 to avoid overwhelming the API. It skips generating explanations if the GROQ_API_KEY environment variable is not set and logs a warning message in this case."];
+  "astVisitor.Visit" [tooltip="This function is a visitor pattern implementation for AST nodes, primarily dealing with function declarations and call expressions. It extracts metadata from the node, including the function name, receiver, source code, and a hash of the source code, and stores it in a map for later use. For function declarations, it creates a new Function struct and updates current function and type variables. For call expressions, it appends the call target to a slice of calls for the current function if the current function is not empty. The visitor function returns itself, allowing method chaining."];
+  "astVisitor.getFunctionName" [tooltip="This function returns the fully qualified name of an AST function declaration, combining the package name with the function name. If the function has a receiver, it appends the receiver type name to the package name before adding the function name. The receiver type name is obtained from a separate function call, which is assumed to be implemented elsewhere."];
+  "main.inferTypeFromVarName" [tooltip="This function determines the inferred type of a variable based on its name by checking a predefined map of type mappings, if the name is found in the map it returns the corresponding type, otherwise it falls back to capitalizing the first letter of the name."];
+  "main.callLLM" [tooltip="The function calls an LLM API with the provided apiKey and sourceCode as user input, generating a system prompt containing the code analysis rules and user prompt with the sourceCode. It then unmarshals and checks the API response for validity, returning a single message from the LLM's response if successful."];
+  "main.outputDOT" [tooltip="This function generates a Graphviz DOT file representation of a call graph, including function nodes with tooltips based on their explanations, and directed edges between function nodes representing call relationships."];
+  "main.analyzeDirectory" -> "main.analyzeFile";
+  "astVisitor.Visit" -> "astVisitor.getFunctionName";
+  "astVisitor.Visit" -> "astVisitor.getReceiver";
+  "astVisitor.Visit" -> "astVisitor.extractSourceCode";
+  "astVisitor.Visit" -> "main.hashSourceCode";
+  "astVisitor.Visit" -> "astVisitor.getCallTarget";
+  "main.generateExplanations" -> "Cache.Get";
+  "main.generateExplanations" -> "main.callLLM";
+  "main.generateExplanations" -> "Cache.Set";
+  "main.main" -> "main.initCache";
+  "main.main" -> "Cache.Close";
+  "main.main" -> "main.analyzeDirectory";
+  "main.main" -> "main.generateExplanations";
+  "main.main" -> "main.outputDOT";
+  "astVisitor.getCallTarget" -> "main.inferTypeFromVarName";
+  "astVisitor.getFunctionName" -> "astVisitor.getReceiver";
+}

@@ -277,6 +277,12 @@ func (v *astVisitor) getCallTarget(call *ast.CallExpr) string {
 			if v.currentType != "" && (x.Name == "u" || x.Name == "d" || x.Name == "s" || len(x.Name) == 1) {
 				return v.currentType + "." + fun.Sel.Name
 			}
+			// Method call on variable (e.g., cache.Get, db.Save)
+			// Try to infer type from variable name
+			varType := inferTypeFromVarName(x.Name)
+			if varType != "" {
+				return varType + "." + fun.Sel.Name
+			}
 			return x.Name + "." + fun.Sel.Name
 		case *ast.SelectorExpr:
 			if ident, ok := x.X.(*ast.Ident); ok {
@@ -287,6 +293,30 @@ func (v *astVisitor) getCallTarget(call *ast.CallExpr) string {
 			}
 		}
 	}
+	return ""
+}
+
+func inferTypeFromVarName(varName string) string {
+	// Simple heuristics to infer type from variable name
+	typeMap := map[string]string{
+		"cache":   "Cache",
+		"db":      "Database",
+		"client":  "HTTPClient",
+		"service": "Service",
+		"repo":    "Repository",
+		"fset":    "FileSet",
+		"visitor": "astVisitor",
+	}
+	
+	if t, exists := typeMap[varName]; exists {
+		return t
+	}
+	
+	// Capitalize first letter as fallback
+	if len(varName) > 0 {
+		return strings.Title(varName)
+	}
+	
 	return ""
 }
 

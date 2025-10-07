@@ -18,6 +18,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	_ "github.com/mattn/go-sqlite3"
 )
@@ -63,8 +64,8 @@ type Choice struct {
 }
 
 var (
-	nodeCount = 0
-	maxNodes  = 100
+	batchSize = 16
+	batchDelay = time.Second
 )
 
 func main() {
@@ -327,41 +328,57 @@ func generateExplanations(cg *CallGraph, cache *Cache) error {
 		return nil
 	}
 
-	var wg sync.WaitGroup
-	semaphore := make(chan struct{}, 5) // Limit concurrent requests
-
-	for name, fn := range cg.Functions {
-		if nodeCount >= maxNodes {
-			fn.Explanation = ""
-			continue
-		}
-
-		// Check cache first
+	// Collect functions that need explanations
+	var functionsToProcess []*Function
+	for _, fn := range cg.Functions {
 		if explanation, found := cache.Get(fn.Hash); found {
 			fn.Explanation = explanation
-			continue
+		} else {
+			functionsToProcess = append(functionsToProcess, fn)
 		}
-
-		nodeCount++
-		wg.Add(1)
-		go func(name string, fn *Function) {
-			defer wg.Done()
-			semaphore <- struct{}{}
-			defer func() { <-semaphore }()
-
-			explanation, err := callLLM(apiKey, fn.SourceCode)
-			if err != nil {
-				fmt.Fprintf(os.Stderr, "LLM error for %s: %v\n", name, err)
-				fn.Explanation = ""
-				return
-			}
-
-			fn.Explanation = explanation
-			cache.Set(fn.Hash, explanation)
-		}(name, fn)
 	}
 
-	wg.Wait()
+	if len(functionsToProcess) == 0 {
+		return nil
+	}
+
+	// Process in batches with rate limiting
+	for i := 0; i < len(functionsToProcess); i += batchSize {
+		batchStart := time.Now()
+		end := i + batchSize
+		if end > len(functionsToProcess) {
+			end = len(functionsToProcess)
+		}
+		
+		batch := functionsToProcess[i:end]
+		var wg sync.WaitGroup
+		
+		for _, fn := range batch {
+			wg.Add(1)
+			go func(fn *Function) {
+				defer wg.Done()
+				
+				explanation, err := callLLM(apiKey, fn.SourceCode)
+				if err != nil {
+					fmt.Fprintf(os.Stderr, "LLM error for %s: %v\n", fn.Name, err)
+					fn.Explanation = ""
+					return
+				}
+				
+				fn.Explanation = explanation
+				cache.Set(fn.Hash, explanation)
+			}(fn)
+		}
+		
+		wg.Wait()
+		
+		// Wait for 1 second from batch start before next batch
+		elapsed := time.Since(batchStart)
+		if elapsed < batchDelay {
+			time.Sleep(batchDelay - elapsed)
+		}
+	}
+
 	return nil
 }
 

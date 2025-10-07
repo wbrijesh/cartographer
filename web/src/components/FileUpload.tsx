@@ -6,10 +6,9 @@ import { Label } from '@/components/ui/label';
 
 interface FileUploadProps {
   onFileContent: (content: string) => void;
-  isDark: boolean;
 }
 
-export default function FileUpload({ onFileContent, isDark }: FileUploadProps) {
+export default function FileUpload({ onFileContent }: FileUploadProps) {
   const [dragActive, setDragActive] = useState(false);
   const [textInput, setTextInput] = useState('');
 

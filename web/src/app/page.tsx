@@ -1,18 +1,20 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Sun, Moon } from 'lucide-react';
 import GraphVisualization from '@/components/GraphVisualization';
 import FileUpload from '@/components/FileUpload';
 import { parseDOT } from '@/lib/dotParser';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Sun, Moon, Workflow, RotateCcw } from 'lucide-react';
 import type { Node, Edge } from '@xyflow/react';
 
 interface GraphData {
   nodes: Node[];
   edges: Edge[];
+  callGraph: Map<string, string[]>;
+  reverseCallGraph: Map<string, string[]>;
 }
 
 export default function Home() {
@@ -20,6 +22,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isDark, setIsDark] = useState(false);
+  const [isHighlightMode, setIsHighlightMode] = useState(false);
 
   // Load dark mode preference from localStorage
   useEffect(() => {
@@ -44,13 +47,13 @@ export default function Home() {
     setError(null);
     
     try {
-      const { nodes, edges } = parseDOT(content);
+      const { nodes, edges, callGraph, reverseCallGraph } = parseDOT(content);
       // Add dark mode info to node data
       const nodesWithDarkMode = nodes.map(node => ({
         ...node,
         data: { ...node.data, isDark }
       }));
-      setGraphData({ nodes: nodesWithDarkMode, edges });
+      setGraphData({ nodes: nodesWithDarkMode, edges, callGraph, reverseCallGraph });
     } catch (err) {
       setError('Failed to parse DOT file. Please check the format.');
       console.error('Parse error:', err);
@@ -62,10 +65,15 @@ export default function Home() {
   const resetGraph = () => {
     setGraphData(null);
     setError(null);
+    setIsHighlightMode(false);
   };
 
   const toggleDarkMode = () => {
     setIsDark(!isDark);
+  };
+
+  const toggleHighlightMode = () => {
+    setIsHighlightMode(!isHighlightMode);
   };
 
   return (
@@ -91,7 +99,18 @@ export default function Home() {
                 {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
               </Button>
               {graphData && (
-                <Button onClick={resetGraph} variant="outline">
+                <Button
+                  variant={isHighlightMode ? "default" : "outline"}
+                  onClick={toggleHighlightMode}
+                  className="gap-2"
+                >
+                  <Workflow className="h-4 w-4" />
+                  Highlight Mode
+                </Button>
+              )}
+              {graphData && (
+                <Button onClick={resetGraph} variant="outline" className="gap-2">
+                  <RotateCcw className="h-4 w-4" />
                   Load New Graph
                 </Button>
               )}
@@ -129,7 +148,7 @@ export default function Home() {
                       </p>
                     </div>
                   ) : (
-                    <FileUpload onFileContent={handleFileContent} isDark={isDark} />
+                    <FileUpload onFileContent={handleFileContent} />
                   )}
                 </CardContent>
               </Card>
@@ -141,6 +160,9 @@ export default function Home() {
               nodes={graphData.nodes} 
               edges={graphData.edges}
               isDark={isDark}
+              isHighlightMode={isHighlightMode}
+              callGraph={graphData.callGraph}
+              reverseCallGraph={graphData.reverseCallGraph}
             />
           </div>
         )}

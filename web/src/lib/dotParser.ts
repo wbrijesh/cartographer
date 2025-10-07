@@ -20,6 +20,8 @@ interface Edge {
 interface GraphData {
   nodes: Node[];
   edges: Edge[];
+  callGraph: Map<string, string[]>; // node -> callees
+  reverseCallGraph: Map<string, string[]>; // node -> callers
 }
 
 const getLayoutedElements = (nodes: Node[], edges: Edge[]) => {
@@ -55,6 +57,8 @@ export function parseDOT(dotContent: string): GraphData {
   const nodes: Node[] = [];
   const edges: Edge[] = [];
   const processedNodes = new Set<string>();
+  const callGraph = new Map<string, string[]>();
+  const reverseCallGraph = new Map<string, string[]>();
   
   // Extract node definitions with tooltips
   const nodeWithTooltipRegex = /"([^"]+)"\s*\[tooltip="([^"]*)"\];/g;
@@ -94,7 +98,7 @@ export function parseDOT(dotContent: string): GraphData {
     }
   }
   
-  // Extract edge definitions
+  // Extract edge definitions and build call graphs
   const edgeRegex = /"([^"]+)"\s*->\s*"([^"]+)";/g;
   let edgeMatch;
   let edgeId = 0;
@@ -107,7 +111,26 @@ export function parseDOT(dotContent: string): GraphData {
       target,
       type: 'smoothstep'
     });
+    
+    // Build call graph (source calls target)
+    if (!callGraph.has(source)) {
+      callGraph.set(source, []);
+    }
+    callGraph.get(source)!.push(target);
+    
+    // Build reverse call graph (target is called by source)
+    if (!reverseCallGraph.has(target)) {
+      reverseCallGraph.set(target, []);
+    }
+    reverseCallGraph.get(target)!.push(source);
   }
   
-  return getLayoutedElements(nodes, edges);
+  const { nodes: layoutedNodes, edges: layoutedEdges } = getLayoutedElements(nodes, edges);
+  
+  return { 
+    nodes: layoutedNodes, 
+    edges: layoutedEdges,
+    callGraph,
+    reverseCallGraph
+  };
 }

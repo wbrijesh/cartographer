@@ -11,7 +11,7 @@ import {
   type Connection,
   type NodeTypes,
   type ColorMode,
-  type OnNodeClick,
+  BackgroundVariant,
 } from '@xyflow/react';
 import '@xyflow/react/dist/style.css';
 import CustomNode from './CustomNode';
@@ -123,7 +123,7 @@ export default function GraphVisualization({
     });
   }, [edges, highlightedEdges, isDark]);
 
-  const onNodeClick: OnNodeClick = useCallback((event, node) => {
+  const onNodeClick = useCallback((event: React.MouseEvent, node: Node) => {
     if (isHighlightMode) {
       setSelectedNodeId(node.id === selectedNodeId ? null : node.id);
     }
@@ -143,7 +143,7 @@ export default function GraphVisualization({
         fitView
       >
         <Controls />
-        <Background variant="dots" gap={12} size={1} />
+        <Background variant={BackgroundVariant.Dots} gap={12} size={1} />
       </ReactFlow>
     </div>
   );

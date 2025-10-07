@@ -1,5 +1,5 @@
-import { Handle, Position, type NodeProps } from '@xyflow/react';
-import { useState, useEffect, useRef } from 'react';
+import { Handle, Position } from '@xyflow/react';
+import { useEffect, useRef } from 'react';
 import { Info, X } from 'lucide-react';
 
 interface CustomNodeData {
@@ -12,7 +12,7 @@ interface CustomNodeData {
   setOpenTooltipId?: (id: string | null) => void;
 }
 
-export default function CustomNode({ data, id }: NodeProps<CustomNodeData>) {
+export default function CustomNode({ data, id }: { data: CustomNodeData; id: string }) {
   const filenameRef = useRef<HTMLDivElement>(null);
   const hasExplanation = data.tooltip && data.tooltip.trim().length > 0;
   const isDark = data.isDark || false;

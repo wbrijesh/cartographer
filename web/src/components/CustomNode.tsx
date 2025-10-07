@@ -1,5 +1,6 @@
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { useState } from 'react';
+import { Info, X } from 'lucide-react';
 
 interface CustomNodeData {
   label: string;
@@ -53,17 +54,17 @@ export default function CustomNode({ data }: NodeProps<CustomNodeData>) {
           {hasExplanation && (
             <button
               onClick={toggleTooltip}
-              className="w-4 h-4 rounded-full bg-blue-500 text-white text-xs flex items-center justify-center hover:bg-blue-600 transition-colors"
+              className="text-blue-500 hover:text-blue-600 transition-colors"
               title="Click for explanation"
             >
-              i
+              <Info size={14} />
             </button>
           )}
         </div>
       </div>
       
       {showTooltip && hasExplanation && (
-        <div className={`absolute z-[9999] p-3 text-sm rounded-lg shadow-lg max-w-xs -top-2 left-full ml-2 ${
+        <div className={`absolute z-[9999] p-3 text-sm rounded-lg shadow-lg w-80 -top-2 left-full ml-2 ${
           isDark 
             ? 'bg-neutral-700 text-neutral-100' 
             : 'bg-neutral-900 text-white'
@@ -73,9 +74,9 @@ export default function CustomNode({ data }: NodeProps<CustomNodeData>) {
           }`}></div>
           <button
             onClick={() => setShowTooltip(false)}
-            className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full text-xs hover:bg-red-600"
+            className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
           >
-            ×
+            <X size={14} />
           </button>
           {data.tooltip}
         </div>

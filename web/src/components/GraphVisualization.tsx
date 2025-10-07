@@ -40,6 +40,7 @@ export default function GraphVisualization({
   const [nodes, , onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
   const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null);
+  const [openTooltipId, setOpenTooltipId] = useState<string | null>(null);
 
   const onConnect = useCallback(
     (params: Connection) => setEdges((eds) => addEdge(params, eds)),
@@ -98,10 +99,12 @@ export default function GraphVisualization({
         ...node.data,
         isHighlighted: highlightedNodes.has(node.id),
         highlightType: highlightedNodes.get(node.id) || null,
-        isDark
+        isDark,
+        openTooltipId,
+        setOpenTooltipId
       }
     }));
-  }, [nodes, highlightedNodes, isDark]);
+  }, [nodes, highlightedNodes, isDark, openTooltipId]);
 
   // Update edge styles based on highlighting
   const styledEdges = useMemo(() => {

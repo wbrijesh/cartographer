@@ -8,18 +8,38 @@ interface CustomNodeData {
   isDark?: boolean;
   isHighlighted?: boolean;
   highlightType?: 'upstream' | 'downstream' | 'selected' | null;
+  openTooltipId?: string | null;
+  setOpenTooltipId?: (id: string | null) => void;
 }
 
-export default function CustomNode({ data }: NodeProps<CustomNodeData>) {
-  const [showTooltip, setShowTooltip] = useState(false);
+export default function CustomNode({ data, id }: NodeProps<CustomNodeData>) {
   const hasExplanation = data.tooltip && data.tooltip.trim().length > 0;
   const isDark = data.isDark || false;
   const isHighlighted = data.isHighlighted || false;
   const highlightType = data.highlightType;
+  const showTooltip = data.openTooltipId === id;
 
   const toggleTooltip = (e: React.MouseEvent) => {
     e.stopPropagation();
-    setShowTooltip(!showTooltip);
+    if (data.setOpenTooltipId) {
+      data.setOpenTooltipId(showTooltip ? null : id);
+    }
+  };
+
+  // Parse tooltip to extract file info and explanation
+  const parseTooltip = (tooltip: string) => {
+    const lines = tooltip.split('\\n');
+    const fileMatch = lines[0]?.match(/^File: (.+):(\d+)$/);
+    
+    if (fileMatch) {
+      const fileName = fileMatch[1];
+      const lineNumber = fileMatch[2];
+      const explanation = lines.slice(2).join('\\n').trim(); // Skip empty line after file info
+      return { fileName, lineNumber, explanation };
+    }
+    
+    // Fallback if format doesn't match expected
+    return { fileName: 'unknown', lineNumber: '0', explanation: tooltip };
   };
 
   // Get node styling based on highlight state
@@ -64,7 +84,7 @@ export default function CustomNode({ data }: NodeProps<CustomNodeData>) {
       </div>
       
       {showTooltip && hasExplanation && (
-        <div className={`absolute z-[9999] p-3 text-sm rounded-lg shadow-lg w-80 -top-2 left-full ml-2 ${
+        <div className={`absolute z-[9999] text-sm rounded-lg shadow-lg w-80 -top-2 left-full ml-2 ${
           isDark 
             ? 'bg-neutral-700 text-neutral-100' 
             : 'bg-neutral-900 text-white'
@@ -72,13 +92,28 @@ export default function CustomNode({ data }: NodeProps<CustomNodeData>) {
           <div className={`absolute -left-1 top-3 w-2 h-2 rotate-45 ${
             isDark ? 'bg-neutral-700' : 'bg-neutral-900'
           }`}></div>
-          <button
-            onClick={() => setShowTooltip(false)}
-            className="absolute top-1 right-1 text-gray-400 hover:text-gray-600"
-          >
-            <X size={14} />
-          </button>
-          {data.tooltip}
+          
+          {(() => {
+            const { fileName, lineNumber, explanation } = parseTooltip(data.tooltip);
+            return (
+              <>
+                <div className="flex items-center justify-between p-2 border-b border-gray-600">
+                  <div className="text-xs font-mono text-gray-300">
+                    {fileName}:{lineNumber}
+                  </div>
+                  <button
+                    onClick={() => data.setOpenTooltipId?.(null)}
+                    className="text-gray-400 hover:text-gray-200"
+                  >
+                    <X size={14} />
+                  </button>
+                </div>
+                <div className="p-3">
+                  {explanation || 'No explanation available'}
+                </div>
+              </>
+            );
+          })()}
         </div>
       )}
       

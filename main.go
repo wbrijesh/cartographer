@@ -30,6 +30,8 @@ type Function struct {
 	SourceCode  string
 	Hash        string
 	Explanation string
+	File        string
+	Line        int
 }
 
 type CallGraph struct {
@@ -202,9 +204,10 @@ func (v *astVisitor) Visit(node ast.Node) ast.Visitor {
 		funcName := v.getFunctionName(n)
 		receiver := v.getReceiver(n)
 		
-		// Extract raw source code
+		// Extract raw source code and position info
 		sourceCode := v.extractSourceCode(n)
 		hash := hashSourceCode(sourceCode)
+		pos := v.fset.Position(n.Pos())
 
 		v.cg.Functions[funcName] = &Function{
 			Name:        n.Name.Name,
@@ -213,6 +216,8 @@ func (v *astVisitor) Visit(node ast.Node) ast.Visitor {
 			SourceCode:  sourceCode,
 			Hash:        hash,
 			Explanation: "",
+			File:        pos.Filename,
+			Line:        pos.Line,
 		}
 		v.current = funcName
 		v.currentType = receiver
@@ -454,12 +459,19 @@ func outputDOT(cg *CallGraph) {
 
 	// Output nodes with tooltips
 	for name, fn := range cg.Functions {
-		tooltip := strings.ReplaceAll(fn.Explanation, "\"", "\\\"")
-		if tooltip != "" {
-			fmt.Printf("  \"%s\" [tooltip=\"%s\"];\n", name, tooltip)
+		// Always include file info, with explanation if available
+		fileInfo := fmt.Sprintf("File: %s:%d", filepath.Base(fn.File), fn.Line)
+		
+		var fullTooltip string
+		if fn.Explanation != "" {
+			fullTooltip = fmt.Sprintf("%s\\n\\n%s", fileInfo, fn.Explanation)
 		} else {
-			fmt.Printf("  \"%s\";\n", name)
+			fullTooltip = fileInfo
 		}
+		
+		// Escape for DOT format
+		fullTooltip = strings.ReplaceAll(fullTooltip, "\"", "\\\"")
+		fmt.Printf("  \"%s\" [tooltip=\"%s\"];\n", name, fullTooltip)
 	}
 
 	// Output edges
